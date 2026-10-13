@@ -14,7 +14,6 @@ Repositorio Parcial 1 desarrollado para la asignatura **Estructuras de Datos** (
 - [Estructuras de Datos Utilizadas](#-estructuras-de-datos-utilizadas)
 - [Estructura Propia: Lista Simplemente Enlazada](#-estructura-propia-lista-simplemente-enlazada)
 - [Algoritmos e Hitos Implementados](#-algoritmos-e-hitos-implementados)
-- [Instrucciones de Ejecución](#-instrucciones-de-ejecución)
 - [Autores](#-autores)
 
 ---
@@ -77,28 +76,12 @@ La clase `GenericLinkedList<T>` cumple con las siguientes características reque
 
 ## Algoritmos e Hitos Implementados
 
-1. **Suma Recursiva de Peso por Municipio:** Recorrido recursivo sumando paquetes cuyo destino coincida ($O(N)$).
-2. **Conteo Recursivo por Prioridad Mínima:** Filtrado recursivo de paquetes con prioridad superior a un valor ($O(N)$).
-3. **Paquete de Mayor Peso (Divide y Vencerás):** División binaria del conjunto y combinación del elemento máximo ($O(N)$).
+1. **Suma Recursiva de Peso por Municipio:** Recorrido recursivo sumando paquetes cuyo destino coincida (O(N)).
+2. **Conteo Recursivo por Prioridad Mínima:** Filtrado recursivo de paquetes con prioridad superior a un valor (O(N)).
+3. **Paquete de Mayor Peso (Divide y Vencerás):** División binaria del conjunto y combinación del elemento máximo (O(N)).
 4. **Búsqueda Binaria por Código:** Búsqueda $O(\log N)$ sobre lista ordenada de paquetes.
 
 ---
-
-## Instrucciones de Ejecución
-
-Para compilar y ejecutar el proyecto desde la terminal sin IDE:
-
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/carlosMolina007/quindio-express.git
-cd quindio-express
-
-# 2. Compilar el código fuente
-javac -d bin src/com/uniquindio/edu/*/*.java
-
-# 3. Ejecutar la aplicación principal
-java -cp bin com.uniquindio.edu.Main
-```
 
 ## Autores
 - **Angel David Diaz Pinilla** - *Estudiante Ingeniería de Sistemas*
