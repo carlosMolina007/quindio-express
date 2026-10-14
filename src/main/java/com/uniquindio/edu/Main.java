@@ -7,102 +7,252 @@ import com.uniquindio.edu.service.DistributionCenterService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
-        DistributionCenterService service = new DistributionCenterService();
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final DistributionCenterService service = new DistributionCenterService();
 
+    // Lista local con los paquetes registrados (los métodos recursivos y la búsqueda binaria la necesitan)
+    private static final List<Package> registeredPackages = new ArrayList<>();
+
+    public static void main(String[] args) {
         System.out.println("=================================================");
         System.out.println("  QUINDÍOEXPRESS - CENTRO DE DISTRIBUCIÓN        ");
-        System.out.println("=================================================\n");
+        System.out.println("=================================================");
 
-        //Registro de los 6 repartidores mínimo
-        System.out.println(">>> 1. Registrando repartidores...");
+        int option;
+        do {
+            printMenu();
+            option = readInt("Seleccione una opción: ");
+            System.out.println();
+
+            switch (option) {
+                case 1 -> loadSampleData();
+                case 2 -> registerDeliveryPersonOption();
+                case 3 -> registerPackageOption();
+                case 4 -> findPackageOption();
+                case 5 -> destinationsReport();
+                case 6 -> packagesByDestinationReport();
+                case 7 -> totalWeightOption();
+                case 8 -> countPriorityOption();
+                case 9 -> heaviestPackageOption();
+                case 10 -> binarySearchOption();
+                case 11 -> assignPackageOption();
+                case 12 -> dispatchFifoOption();
+                case 13 -> dispatchPriorityOption();
+                case 14 -> showHistoryOption();
+                case 0 -> System.out.println("Cerrando el sistema. ¡Hasta pronto!");
+                default -> System.out.println("Opción inválida, intente de nuevo.");
+            }
+        } while (option != 0);
+
+        scanner.close();
+    }
+
+    // ------------------------------------------------------------
+    // MENÚ
+    // ------------------------------------------------------------
+
+    private static void printMenu() {
+        System.out.println("\n================== MENÚ PRINCIPAL ==================");
+        System.out.println(" 1.  Cargar datos de ejemplo (6 repartidores y 30 paquetes)");
+        System.out.println(" 2.  Registrar repartidor");
+        System.out.println(" 3.  Registrar paquete");
+        System.out.println(" 4.  Buscar paquete por código [HashMap O(1)]");
+        System.out.println(" 5.  Reporte de municipios [HashSet / TreeSet]");
+        System.out.println(" 6.  Carga de paquetes por destino");
+        System.out.println(" 7.  Peso total por destino [Recursivo]");
+        System.out.println(" 8.  Contar paquetes con prioridad mínima [Recursivo]");
+        System.out.println(" 9.  Paquete más pesado [Divide y Vencerás]");
+        System.out.println(" 10. Buscar por código [Búsqueda Binaria]");
+        System.out.println(" 11. Asignar paquete a repartidor");
+        System.out.println(" 12. Despachar siguiente paquete [FIFO]");
+        System.out.println(" 13. Despachar siguiente paquete [Prioridad]");
+        System.out.println(" 14. Historial de entregas [GenericLinkedList]");
+        System.out.println(" 0.  Salir");
+        System.out.println("====================================================");
+    }
+
+    // ------------------------------------------------------------
+    // OPCIONES
+    // ------------------------------------------------------------
+
+    private static void loadSampleData() {
         service.registerDeliveryPerson(new DeliveryPerson("DP01", "Carlos Gomez", "Armenia", true));
         service.registerDeliveryPerson(new DeliveryPerson("DP02", "Ana Martinez", "Salento", true));
         service.registerDeliveryPerson(new DeliveryPerson("DP03", "Luis Rodriguez", "Calarcá", true));
         service.registerDeliveryPerson(new DeliveryPerson("DP04", "Sofia Lopez", "Circasia", true));
         service.registerDeliveryPerson(new DeliveryPerson("DP05", "Jorge Grajales", "Montenegro", true));
         service.registerDeliveryPerson(new DeliveryPerson("DP06", "Maria Fernandez", "Armenia", true));
-        System.out.println("✓ Repartidores registrados correctamente.\n");
 
-        //Registro de los 30 paquetes como mínimo
-        System.out.println(">>> 2. Registrando 30 paquetes de la jornada...");
-        List<Package> packageList = createSamplePackages();
-        for (Package pkg : packageList) {
-            service.registerPackage(pkg);
+        int added = 0;
+        for (Package pkg : createSamplePackages()) {
+            if (service.registerPackage(pkg)) {
+                registeredPackages.add(pkg);
+                added++;
+            }
         }
-        System.out.println("✓ Total paquetes registrados: " + packageList.size() + "\n");
-
-        //Consulta rápida por código con HashMap O(1)
-        System.out.println(">>> 3. Consulta rápida por código: ");
-        String searchCode = "PQ731";
-        Package found = service.findPackageByCode(searchCode);
-        System.out.println("   Búsqueda de '" + searchCode + "': " + (found != null ? found : "No encontrado"));
-
-        //Municipíos ordenados por el alfabeto y sin duplicar
-        System.out.println("\n>>> 4. Reporte de Municipios Destino:");
-        System.out.println("   - Sin duplicados [HashSet]: " + service.getUniqueDestinationsSet());
-        System.out.println("   - Orden alfabético [TreeSet]: " + service.getSortedDestinationsSet());
-
-        //Agrupación de paquetes por destino
-        System.out.println("\n>>> 5. Carga de paquetes por destino [HashMap<String, List<Package>>]:");
-        service.getPackagesByDestinationMap().forEach((destination, list) -> {
-            System.out.println("   * " + destination + " (" + list.size() + " paquetes)");
-        });
-
-        //Metodos recursivos
-        System.out.println("\n>>> 6. Métodos Recursivos:");
-        double totalArmeniaWeight = service.calculateTotalWeightRecursive(packageList, "Armenia", 0);
-        System.out.printf("   - Peso total para Armenia: %.2f kg\n", totalArmeniaWeight);
-
-        int minPriority = 4;
-        int countHighPriority = service.countPackagesWithMinPriority(packageList, minPriority, 0);
-        System.out.println("   - Paquetes con prioridad >= " + minPriority + ": " + countHighPriority);
-
-        //Divide y venceras para buscar el paquete más pesado
-        System.out.println("\n>>> 7. Divide y Vencerás:");
-        Package heaviest = service.findHeaviestPackageDivideAndConquer(packageList, 0, packageList.size() - 1);
-        System.out.println("   - Paquete de mayor peso: " + heaviest);
-
-        //Busqueda binaria O(log N)
-        System.out.println("\n>>> 8. Búsqueda Binaria sobre lista ordenada por Código:");
-        List<Package> sortedByCodeList = new ArrayList<>(packageList);
-        Collections.sort(sortedByCodeList);
-
-        String binaryTarget = "PQ942";
-        int index = service.binarySearchByCode(sortedByCodeList, binaryTarget);
-        if (index != -1) {
-            System.out.println("   - Paquete '" + binaryTarget + "' encontrado en índice " + index + ": " + sortedByCodeList.get(index));
-        } else {
-            System.out.println("   - Paquete '" + binaryTarget + "' no encontrado.");
+        System.out.println("✓ Repartidores cargados y " + added + " paquetes nuevos registrados.");
+        if (added == 0) {
+            System.out.println("  (Los datos de ejemplo ya estaban cargados.)");
         }
-
-        //Asignando paquete a repartidor
-        System.out.println("\n>>> 9. Asignación de Paquete a Repartidor:");
-        boolean assigned = service.assignPackageToDeliveryPerson("PQ731", "DP01");
-        System.out.println("   - Asignación PQ731 a repartidor DP01 (Armenia): " + (assigned ? "Éxito" : "Falló"));
-
-        //Despacho por prioridad y evidencia del uso de nuestra propia lista genérica
-        System.out.println("\n>>> 10. Despachando paquetes por Prioridad ( PriorityQueue ):");
-        System.out.println("   1° Despachado: " + service.dispatchNextPriority());
-        System.out.println("   2° Despachado: " + service.dispatchNextPriority());
-        System.out.println("   3° Despachado: " + service.dispatchNextPriority());
-
-        System.out.println("\n>>> 11. Historial de Entregas [GenericLinkedList PROPIA]:");
-        System.out.println("   Recorriendo historial con for-each (probando Iterator/Iterable)...");
-        int count = 1;
-        for (Package deliveredPkg : service.getDeliveryHistory()) {
-            System.out.println("   " + count++ + ". Entregado -> " + deliveredPkg);
-        }
-
-        System.out.println("\n=================================================");
-        System.out.println("  EJECUCIÓN COMPLETADA EXITOSAMENTE             ");
-        System.out.println("=================================================");
     }
 
-    //Datos precargados, 30 paquetes
+    private static void registerDeliveryPersonOption() {
+        String id = readLine("ID del repartidor: ");
+        String name = readLine("Nombre: ");
+        String zone = readLine("Zona (municipio): ");
+
+        boolean ok = service.registerDeliveryPerson(new DeliveryPerson(id, name, zone, true));
+        System.out.println(ok ? "✓ Repartidor registrado." : "✗ Ya existe un repartidor con ese ID.");
+    }
+
+    private static void registerPackageOption() {
+        String code = readLine("Código del paquete: ");
+        String destination = readLine("Destino: ");
+        double weight = readDouble("Peso (kg): ");
+        int priority = readInt("Prioridad (1 a 5): ");
+        int extra = readInt("Último dato numérico del paquete (el 5.º parámetro del constructor): ");
+
+        Package pkg = new Package(code, destination, weight, priority, extra);
+        if (service.registerPackage(pkg)) {
+            registeredPackages.add(pkg);
+            System.out.println("✓ Paquete registrado.");
+        } else {
+            System.out.println("✗ Ya existe un paquete con ese código.");
+        }
+    }
+
+    private static void findPackageOption() {
+        String code = readLine("Código a buscar: ");
+        Package found = service.findPackageByCode(code);
+        System.out.println(found != null ? "Encontrado: " + found : "No encontrado.");
+    }
+
+    private static void destinationsReport() {
+        System.out.println("Sin duplicados [HashSet]: " + service.getUniqueDestinationsSet());
+        System.out.println("Orden alfabético [TreeSet]: " + service.getSortedDestinationsSet());
+    }
+
+    private static void packagesByDestinationReport() {
+        if (service.getPackagesByDestinationMap().isEmpty()) {
+            System.out.println("No hay paquetes registrados.");
+            return;
+        }
+        service.getPackagesByDestinationMap().forEach((destination, list) ->
+                System.out.println("* " + destination + " (" + list.size() + " paquetes)"));
+    }
+
+    private static void totalWeightOption() {
+        if (noPackages()) return;
+        String destination = readLine("Destino: ");
+        double total = service.calculateTotalWeightRecursive(registeredPackages, destination, 0);
+        System.out.printf("Peso total para %s: %.2f kg%n", destination, total);
+    }
+
+    private static void countPriorityOption() {
+        if (noPackages()) return;
+        int minPriority = readInt("Prioridad mínima: ");
+        int count = service.countPackagesWithMinPriority(registeredPackages, minPriority, 0);
+        System.out.println("Paquetes con prioridad >= " + minPriority + ": " + count);
+    }
+
+    private static void heaviestPackageOption() {
+        if (noPackages()) return;
+        Package heaviest = service.findHeaviestPackageDivideAndConquer(
+                registeredPackages, 0, registeredPackages.size() - 1);
+        System.out.println("Paquete de mayor peso: " + heaviest);
+    }
+
+    private static void binarySearchOption() {
+        if (noPackages()) return;
+        String target = readLine("Código a buscar: ");
+
+        // La búsqueda binaria exige la lista ordenada por código
+        List<Package> sortedByCode = new ArrayList<>(registeredPackages);
+        Collections.sort(sortedByCode);
+
+        int index = service.binarySearchByCode(sortedByCode, target);
+        if (index != -1) {
+            System.out.println("Encontrado en el índice " + index + ": " + sortedByCode.get(index));
+        } else {
+            System.out.println("Paquete '" + target + "' no encontrado.");
+        }
+    }
+
+    private static void assignPackageOption() {
+        String code = readLine("Código del paquete: ");
+        String personId = readLine("ID del repartidor: ");
+        boolean ok = service.assignPackageToDeliveryPerson(code, personId);
+        System.out.println(ok ? "✓ Asignación exitosa."
+                : "✗ Falló: paquete o repartidor inexistente, repartidor no disponible o zona distinta al destino.");
+    }
+
+    private static void dispatchFifoOption() {
+        Package pkg = service.dispatchNextFIFO();
+        System.out.println(pkg != null ? "Despachado (FIFO): " + pkg : "No hay paquetes en cola.");
+    }
+
+    private static void dispatchPriorityOption() {
+        Package pkg = service.dispatchNextPriority();
+        System.out.println(pkg != null ? "Despachado (prioridad): " + pkg : "No hay paquetes en cola.");
+    }
+
+    private static void showHistoryOption() {
+        int count = 1;
+        for (Package delivered : service.getDeliveryHistory()) {
+            System.out.println(count++ + ". Entregado -> " + delivered);
+        }
+        if (count == 1) {
+            System.out.println("El historial está vacío.");
+        }
+    }
+
+    // ------------------------------------------------------------
+    // UTILIDADES DE ENTRADA
+    // ------------------------------------------------------------
+
+    private static boolean noPackages() {
+        if (registeredPackages.isEmpty()) {
+            System.out.println("No hay paquetes registrados. Use la opción 1 o la 3 primero.");
+            return true;
+        }
+        return false;
+    }
+
+    private static String readLine(String message) {
+        System.out.print(message);
+        return scanner.nextLine().trim();
+    }
+
+    private static int readInt(String message) {
+        while (true) {
+            System.out.print(message);
+            try {
+                return Integer.parseInt(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Ingrese un número entero válido.");
+            }
+        }
+    }
+
+    private static double readDouble(String message) {
+        while (true) {
+            System.out.print(message);
+            try {
+                return Double.parseDouble(scanner.nextLine().trim().replace(',', '.'));
+            } catch (NumberFormatException e) {
+                System.out.println("Ingrese un número válido.");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // DATOS PRECARGADOS (30 paquetes)
+    // ------------------------------------------------------------
+
     private static List<Package> createSamplePackages() {
         List<Package> list = new ArrayList<>();
         list.add(new Package("PQ731", "Armenia", 4.5, 5, 45));
